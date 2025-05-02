@@ -1,0 +1,13 @@
+{
+  "product_type": "unpacked",
+  "unpacked_type": "vegetable",
+  "product_name": "Onion",
+  "freshness": "fresh",
+  "shelf_life_days": 7,
+  "mrp": "N/A",
+  "manufacturing_date": "N/A",
+  "expiry_date": "N/A",
+  "timestamp": "2025-05-01 02:58:23",
+  "product_image": "static/captures/camera_camera1_20250501_025819.jpg",
+  "mrp_image": "static/detections/roi_camera1_camera_camera1_20250501_025819.jpg"
+}

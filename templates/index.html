@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Computer Vision Based Inventory Management System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .setup-form {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .checkbox-group label {
+            margin-bottom: 0;
+            margin-left: 8px;
+        }
+        input[type="checkbox"] {
+            width: auto;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .camera-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .camera-box {
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #fff;
+        }
+        .camera-title {
+            margin-top: 0;
+            color: #333;
+        }
+        .camera-feed {
+            width: 100%;
+            height: 300px;
+            background-color: #000;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .camera-feed img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .captured-image {
+            margin-top: 20px;
+        }
+        .captured-image h3 {
+            margin-bottom: 10px;
+        }
+        .captured-image img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .detection-results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .detection-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .detection-box {
+            flex: 1;
+            min-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #fff;
+        }
+        .detection-title {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 16px;
+        }
+        .detection-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .detection-info span {
+            font-weight: bold;
+        }
+        .detection-image {
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .tab {
+            padding: 8px 16px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #fff;
+            border-bottom: 1px solid #fff;
+        }
+        .tab-content {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 0 5px 5px 5px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .model-setup {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .processing-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .indicator-idle {
+            background-color: #6c757d;
+        }
+        .indicator-processing {
+            background-color: #007bff;
+            animation: pulse 1.5s infinite;
+        }
+        .indicator-complete {
+            background-color: #28a745;
+        }
+        .indicator-error {
+            background-color: #dc3545;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* New styles for best detection section */
+        .best-detection-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f5e9;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .best-detection-title {
+            color: #2E7D32;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 24px;
+            border-bottom: 1px solid #A5D6A7;
+            padding-bottom: 10px;
+        }
+        .best-detection-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .best-detection-info {
+            flex: 1;
+            min-width: 250px;
+        }
+        .best-detection-images {
+            flex: 2;
+            min-width: 300px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .best-detection-image-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        .best-detection-badge {
+            display: inline-block;
+            background-color: #2E7D32;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .best-detection-stat {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .best-detection-stat-label {
+            font-weight: bold;
+            color: #2E7D32;
+        }
+        /* Processing queue status */
+        .queue-status {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .queue-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* Product Info Section styles */
+        .product-info-container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e3f2fd;
+            border: 2px solid #1976D2;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .product-info-title {
+            color: #1565C0;
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 24px;
+            border-bottom: 1px solid #64B5F6;
+            padding-bottom: 10px;
+        }
+        .product-info-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .product-info-details {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .product-info-images {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .product-info-image-box {
+            flex: 1;
+            min-width: 200px;
+        }
+        .product-info-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
+            color: white;
+        }
+        .badge-packed {
+            background-color: #2E7D32;
+        }
+        .badge-unpacked {
+            background-color: #EF6C00;
+        }
+        .badge-fresh {
+            background-color: #2E7D32;
+        }
+        .badge-rotten {
+            background-color: #D32F2F;
+        }
+        .product-info-item {
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+        .product-info-label {
+            font-weight: bold;
+            color: #1565C0;
+            display: inline-block;
+            width: 160px;
+        }
+        .product-info-value {
+            font-weight: normal;
+        }
+        .product-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #1565C0;
+        }
+        .product-info-error {
+            color: #D32F2F;
+            padding: 10px;
+            background-color: #FFEBEE;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Computer Vision Based Inventory Management System</h1>
+        
+        <div class="setup-form">
+            <h2>Camera Setup</h2>
+            <div class="form-group">
+                <label for="camera1_url">Camera 1 RTSP URL:</label>
+                <input type="text" id="camera1_url" placeholder="rtsp://username:password@ip:port/stream" value="rtsp://192.168.29.69:5540/ch0">
+            </div>
+            <div class="form-group">
+                <label for="camera2_url">Camera 2 RTSP URL:</label>
+                <input type="text" id="camera2_url" placeholder="rtsp://username:password@ip:port/stream" value="rtsp://192.168.29.121:5540/ch0">
+            </div>
+            <button id="setup_cameras">Connect to Cameras</button>
+            <div id="setup_status" class="status-message"></div>
+        </div>
+        
+        <div class="model-setup">
+            <h2>YOLO Model Setup</h2>
+            <div class="form-group">
+                <label for="model_path">YOLO Model Path:</label>
+                <input type="text" id="model_path" placeholder="models/train.pt" value="models/train.pt">
+            </div>
+            <div class="form-group">
+                <label for="confidence_threshold">Confidence Threshold:</label>
+                <input type="number" id="confidence_threshold" min="0.01" max="1.0" step="0.01" value="0.1">
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="use_cpu" name="use_cpu">
+                <label for="use_cpu">Use CPU for inference (recommended if experiencing CUDA errors)</label>
+            </div>
+            <button id="setup_model">Load YOLO Model</button>
+            <div id="model_status" class="status-message"></div>
+        </div>
+        
+        <!-- Product Information Section -->
+        <div class="product-info-container" id="product-info-section">
+            <h2 class="product-info-title">Product Information</h2>
+            <div id="product-info-content">
+                <div class="info-message">No product information available yet. Capture images to analyze product details.</div>
+            </div>
+        </div>
+        
+        <!-- Best Detection Section -->
+        <div class="best-detection-container" id="best-detection-section">
+            <h2 class="best-detection-title">Best MRP Detection</h2>
+            <div id="best-detection-content">
+                <div class="info-message">No detections available yet. Capture images from cameras to see results.</div>
+            </div>
+        </div>
+        
+        <div class="camera-container">
+            <div class="camera-box">
+                <h2 class="camera-title">Camera 1</h2>
+                <div class="camera-feed" id="camera1_feed">
+                    <span>Camera not connected</span>
+                </div>
+                <div class="processing-indicator">
+                    <div id="camera1_indicator" class="indicator-dot indicator-idle"></div>
+                    <span id="camera1_status_text">Ready</span>
+                </div>
+                <button id="capture_camera1">Capture Photo</button>
+                <div id="camera1_status" class="status-message"></div>
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="openTab('camera1_captured_tab')">Captured Image</div>
+                    <div class="tab" onclick="openTab('camera1_detection_tab')">MRP Detection</div>
+                </div>
+                
+                <div id="camera1_captured_tab" class="tab-content active">
+                    <h3>Last Captured Image</h3>
+                    <div id="camera1_image">No image captured yet</div>
+                </div>
+                
+                <div id="camera1_detection_tab" class="tab-content">
+                    <h3>MRP Detection Results</h3>
+                    <div id="camera1_detection">No detection results yet</div>
+                </div>
+            </div>
+            
+            <div class="camera-box">
+                <h2 class="camera-title">Camera 2</h2>
+                <div class="camera-feed" id="camera2_feed">
+                    <span>Camera not connected</span>
+                </div>
+                <div class="processing-indicator">
+                    <div id="camera2_indicator" class="indicator-dot indicator-idle"></div>
+                    <span id="camera2_status_text">Ready</span>
+                </div>
+                <button id="capture_camera2">Capture Photo</button>
+                <div id="camera2_status" class="status-message"></div>
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="openTab('camera2_captured_tab')">Captured Image</div>
+                    <div class="tab" onclick="openTab('camera2_detection_tab')">MRP Detection</div>
+                </div>
+                
+                <div id="camera2_captured_tab" class="tab-content active">
+                    <h3>Last Captured Image</h3>
+                    <div id="camera2_image">No image captured yet</div>
+                </div>
+                
+                <div id="camera2_detection_tab" class="tab-content">
+                    <h3>MRP Detection Results</h3>
+                    <div id="camera2_detection">No detection results yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup cameras
+        document.getElementById('setup_cameras').addEventListener('click', async () => {
+            const camera1Url = document.getElementById('camera1_url').value;
+            const camera2Url = document.getElementById('camera2_url').value;
+            
+            if (!camera1Url || !camera2Url) {
+                showStatus('setup_status', 'Please enter both camera URLs', 'error');
+                return;
+            }
+            
+            showStatus('setup_status', 'Connecting to cameras...', '');
+            
+            try {
+                const response = await fetch('/setup-cameras', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        camera1_url: camera1Url,
+                        camera2_url: camera2Url
+                    }),
+                });
+                
+                const data = await response.json();
+                showStatus('setup_status', data.message, data.status);
+                
+                if (data.status === 'success') {
+                    // Update camera feeds with timestamps to prevent caching
+                    const timestamp = Date.now();
+                    document.getElementById('camera1_feed').innerHTML = `
+                        <img src="/video_feed/camera1?t=${timestamp}" alt="Camera 1 Feed">
+                    `;
+                    document.getElementById('camera2_feed').innerHTML = `
+                        <img src="/video_feed/camera2?t=${timestamp}" alt="Camera 2 Feed">
+                    `;
+                    
+                    // Fetch last captured images if any
+                    fetchLastCaptured();
+                    // Fetch last detection results if any
+                    fetchLastDetection();
+                    // Fetch best detection result if any
+                    fetchBestDetection();
+                    // Fetch product info if any
+                    fetchProductInfo();
+                    // Start polling for processing status
+                    startStatusPolling();
+                }
+            } catch (error) {
+                showStatus('setup_status', `Error: ${error.message}`, 'error');
+            }
+        });
+        
+        // Setup YOLO model
+        document.getElementById('setup_model').addEventListener('click', async () => {
+            const modelPath = document.getElementById('model_path').value;
+            const confidenceThreshold = document.getElementById('confidence_threshold').value;
+            const useCpu = document.getElementById('use_cpu').checked;
+            
+            if (!modelPath) {
+                showStatus('model_status', 'Please enter the model path', 'error');
+                return;
+            }
+            
+            showStatus('model_status', 'Loading YOLO model...', '');
+            
+            try {
+                const response = await fetch('/setup-yolo-model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model_path: modelPath,
+                        confidence: parseFloat(confidenceThreshold),
+                        use_cpu: useCpu
+                    }),
+                });
+                
+                const data = await response.json();
+                showStatus('model_status', data.message, data.status);
+            } catch (error) {
+                showStatus('model_status', `Error: ${error.message}`, 'error');
+            }
+        });
+        
+        // Capture buttons
+        document.getElementById('capture_camera1').addEventListener('click', () => capturePhoto('camera1'));
+        document.getElementById('capture_camera2').addEventListener('click', () => capturePhoto('camera2'));
+        
+        // Function to capture photo
+        async function capturePhoto(cameraId) {
+            showStatus(`${cameraId}_status`, 'Capturing photo...', '');
+            updateProcessingIndicator(cameraId, 'processing', 'Capturing...');
+            
+            try {
+                const response = await fetch(`/capture/${cameraId}`);
+                const data = await response.json();
+                
+                showStatus(`${cameraId}_status`, data.message, data.status);
+                
+                if (data.status === 'success') {
+                    // Update the captured image with a timestamp to prevent caching
+                    const timestamp = Date.now();
+                    document.getElementById(`${cameraId}_image`).innerHTML = `
+                        <img src="${data.filename}?t=${timestamp}" alt="Captured from ${cameraId}">
+                    `;
+                    
+                    // Switch to the captured image tab
+                    openTab(`${cameraId}_captured_tab`);
+                    
+                    // Start checking for detection results
+                    updateProcessingIndicator(cameraId, 'processing', 'Processing with YOLO...');
+                    
+                    // Check processing status periodically
+                    let checkCount = 0;
+                    const maxChecks = 30; // 30 checks * 1 second = 30 seconds max wait
+                    
+                    const checkInterval = setInterval(async () => {
+                        checkCount++;
+                        const status = await checkProcessingStatus(cameraId);
+                        
+                        if (status === 'complete') {
+                            clearInterval(checkInterval);
+                            await fetchLastDetection();
+                            await fetchBestDetection();  // Also fetch best detection
+                            await fetchProductInfo();    // Also fetch product info
+                            updateProcessingIndicator(cameraId, 'complete', 'Detection complete');
+                            openTab(`${cameraId}_detection_tab`);
+                        } 
+                        else if (status === 'no_detections') {
+                            clearInterval(checkInterval);
+                            updateProcessingIndicator(cameraId, 'error', 'No MRP tags detected');
+                            showStatus(`${cameraId}_status`, 'No MRP tags detected in the image', 'warning');
+                        }
+                        else if (status === 'error') {
+                            clearInterval(checkInterval);
+                            updateProcessingIndicator(cameraId, 'error', 'Processing error');
+                            showStatus(`${cameraId}_status`, 'Error processing the image. Try using CPU mode if you see CUDA errors.', 'error');
+                        }
+                        else if (status === 'no_model') {
+                            clearInterval(checkInterval);
+                            updateProcessingIndicator(cameraId, 'error', 'YOLO model not loaded');
+                            showStatus(`${cameraId}_status`, 'YOLO model not loaded', 'error');
+                        }
+                        else if (checkCount >= maxChecks) {
+                            clearInterval(checkInterval);
+                            updateProcessingIndicator(cameraId, 'error', 'Processing timeout');
+                            showStatus(`${cameraId}_status`, 'Processing timed out', 'error');
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                showStatus(`${cameraId}_status`, `Error: ${error.message}`, 'error');
+                updateProcessingIndicator(cameraId, 'error', 'Error');
+            }
+        }
+        
+        // Function to check processing status
+        async function checkProcessingStatus(cameraId) {
+            try {
+                const response = await fetch('/processing_status');
+                const data = await response.json();
+                
+                if (data && data[cameraId]) {
+                    return data[cameraId];
+                }
+                return 'unknown';
+            } catch (error) {
+                console.error('Error checking processing status:', error);
+                return 'error';
+            }
+        }
+        
+        // Function to update processing indicator
+        function updateProcessingIndicator(cameraId, status, text) {
+            const indicator = document.getElementById(`${cameraId}_indicator`);
+            const statusText = document.getElementById(`${cameraId}_status_text`);
+            
+            // Remove all classes
+            indicator.className = 'indicator-dot';
+            
+            // Add the appropriate class
+            if (status === 'processing') {
+                indicator.classList.add('indicator-processing');
+            } else if (status === 'complete') {
+                indicator.classList.add('indicator-complete');
+            } else if (status === 'error') {
+                indicator.classList.add('indicator-error');
+            } else {
+                indicator.classList.add('indicator-idle');
+            }
+            
+            // Update text
+            statusText.textContent = text;
+        }
+        
+        // Start polling for processing status
+        function startStatusPolling() {
+            // Check processing status every 2 seconds
+            setInterval(async () => {
+                try {
+                    const response = await fetch('/processing_status');
+                    const data = await response.json();
+                    
+                    // Update indicators based on processing status
+                    for (const [cameraId, status] of Object.entries(data)) {
+                        if (status === 'processing') {
+                            updateProcessingIndicator(cameraId, 'processing', 'Processing with YOLO...');
+                        } else if (status === 'complete') {
+                            updateProcessingIndicator(cameraId, 'complete', 'Detection complete');
+                        } else if (status === 'error' || status === 'no_detections' || status === 'no_model') {
+                            updateProcessingIndicator(cameraId, 'error', `Error: ${status}`);
+                        } else if (status === 'idle') {
+                            updateProcessingIndicator(cameraId, 'idle', 'Ready');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error polling processing status:', error);
+                }
+            }, 2000);
+        }
+        
+        // Function to fetch last captured images
+        async function fetchLastCaptured() {
+            try {
+                const response = await fetch('/last_captured');
+                const data = await response.json();
+                
+                // Update the UI with any existing captured images
+                for (const [cameraId, filename] of Object.entries(data)) {
+                    const timestamp = Date.now();
+                    document.getElementById(`${cameraId}_image`).innerHTML = `
+                        <img src="${filename}?t=${timestamp}" alt="Captured from ${cameraId}">
+                    `;
+                }
+            } catch (error) {
+                console.error('Error fetching last captured images:', error);
+            }
+        }
+        
+        // Function to fetch last detection results
+        async function fetchLastDetection() {
+            try {
+                const response = await fetch('/last_detection');
+                const data = await response.json();
+                
+                // Check if we have any detection results
+                if (Object.keys(data).length === 0) {
+                    console.log("No detection results available yet");
+                    return;
+                }
+                
+                console.log("Detection results:", data);
+                
+                // Update the UI with any existing detection results
+                for (const [cameraId, result] of Object.entries(data)) {
+                    const timestamp = Date.now();
+                    const confidencePercent = (result.confidence * 100).toFixed(2);
+                    
+                    document.getElementById(`${cameraId}_detection`).innerHTML = `
+                        <div class="detection-container">
+                            <div class="detection-box">
+                                <h4 class="detection-title">MRP Tag Detected</h4>
+                                <div class="detection-info">
+                                    <p>Class: <span>${result.class}</span></p>
+                                    <p>Confidence: <span>${confidencePercent}%</span></p>
+                                    <p>Timestamp: <span>${result.timestamp}</span></p>
+                                </div>
+                                <img class="detection-image" src="${result.detection_image}?t=${timestamp}" alt="Detection from ${cameraId}">
+                            </div>
+                            <div class="detection-box">
+                                <h4 class="detection-title">Cropped MRP Region</h4>
+                                <img class="detection-image" src="${result.roi_image}?t=${timestamp}" alt="ROI from ${cameraId}">
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Update status indicator
+                    updateProcessingIndicator(cameraId, 'complete', 'Detection complete');
+                }
+            } catch (error) {
+                console.error('Error fetching last detection results:', error);
+            }
+        }
+        
+        // Function to fetch best detection result
+        async function fetchBestDetection() {
+            try {
+                const response = await fetch('/best_detection');
+                const result = await response.json();
+                
+                // Check if we have a valid detection result
+                if (result.message) {
+                    console.log("No best detection available yet");
+                    document.getElementById('best-detection-content').innerHTML = `
+                        <div class="info-message">No detections available yet. Capture images from cameras to see results.</div>
+                    `;
+                    return;
+                }
+                
+                console.log("Best detection result:", result);
+                
+                // Format confidence as percentage
+                const confidencePercent = (result.confidence * 100).toFixed(2);
+                const timestamp = Date.now();
+                
+                // Update the UI with the best detection result
+                document.getElementById('best-detection-content').innerHTML = `
+                    <div class="best-detection-content">
+                        <div class="best-detection-info">
+                            <div class="best-detection-badge">${result.info}</div>
+                            <div class="best-detection-stat">
+                                <span class="best-detection-stat-label">Class:</span> ${result.class}
+                            </div>
+                            <div class="best-detection-stat">
+                                <span class="best-detection-stat-label">Confidence:</span> ${confidencePercent}%
+                            </div>
+                            <div class="best-detection-stat">
+                                <span class="best-detection-stat-label">Timestamp:</span> ${result.timestamp}
+                            </div>
+                            <div class="best-detection-stat">
+                                <span class="best-detection-stat-label">Location:</span> 
+                                x: ${result.bbox[0]}, y: ${result.bbox[1]}, 
+                                width: ${result.bbox[2] - result.bbox[0]}, height: ${result.bbox[3] - result.bbox[1]}
+                            </div>
+                        </div>
+                        <div class="best-detection-images">
+                            <div class="best-detection-image-box">
+                                <h4 class="detection-title">Detection Image</h4>
+                                <img class="detection-image" src="${result.detection_image}?t=${timestamp}" alt="Best detection">
+                            </div>
+                            <div class="best-detection-image-box">
+                                <h4 class="detection-title">Cropped MRP Region</h4>
+                                <img class="detection-image" src="${result.roi_image}?t=${timestamp}" alt="Best ROI">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching best detection:', error);
+            }
+        }
+        
+        // Function to fetch product information
+        async function fetchProductInfo() {
+            try {
+                const response = await fetch('/analyze_product');
+                const data = await response.json();
+                
+                // Check if we have an error or no data
+                if (data.error || data.message) {
+                    console.log("Product info error or not available:", data);
+                    document.getElementById('product-info-content').innerHTML = `
+                        <div class="info-message">
+                            ${data.message || 'No product information available yet.'}
+                            ${data.error ? `<div class="product-info-error">Error: ${data.error}</div>` : ''}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                console.log("Product info:", data);
+                
+                // Format badges based on product type and freshness
+                let typeBadge = '';
+                let freshnessBadge = '';
+                
+                if (data.product_type === 'packed') {
+                    typeBadge = '<span class="product-info-badge badge-packed">PACKED</span>';
+                } else if (data.product_type === 'unpacked') {
+                    typeBadge = '<span class="product-info-badge badge-unpacked">UNPACKED</span>';
+                }
+                
+                if (data.freshness === 'fresh') {
+                    freshnessBadge = '<span class="product-info-badge badge-fresh">FRESH</span>';
+                } else if (data.freshness === 'rotten') {
+                    freshnessBadge = '<span class="product-info-badge badge-rotten">ROTTEN</span>';
+                }
+                
+                // Get timestamps for images
+                const timestamp = Date.now();
+                
+                // Update the HTML
+                document.getElementById('product-info-content').innerHTML = `
+                    <div class="product-info-content">
+                        <div class="product-info-details">
+                            <div class="product-name">
+                                ${data.product_name || 'Unknown Product'} ${typeBadge} ${freshnessBadge}
+                            </div>
+                            
+                            <div class="product-info-item">
+                                <span class="product-info-label">Product Type:</span>
+                                <span class="product-info-value">${data.product_type || 'N/A'}</span>
+                            </div>
+                            
+                            ${data.product_type === 'unpacked' ? `
+                                <div class="product-info-item">
+                                    <span class="product-info-label">Unpacked Type:</span>
+                                    <span class="product-info-value">${data.unpacked_type || 'N/A'}</span>
+                                </div>
+                                
+                                <div class="product-info-item">
+                                    <span class="product-info-label">Freshness:</span>
+                                    <span class="product-info-value">${data.freshness || 'N/A'}</span>
+                                </div>
+                                
+                                <div class="product-info-item">
+                                    <span class="product-info-label">Shelf Life:</span>
+                                    <span class="product-info-value">${data.shelf_life_days || 'N/A'} days</span>
+                                </div>
+                            ` : `
+                                <div class="product-info-item">
+                                    <span class="product-info-label">MRP:</span>
+                                    <span class="product-info-value">${data.mrp || 'N/A'}</span>
+                                </div>
+                                
+                                <div class="product-info-item">
+                                    <span class="product-info-label">Manufacturing Date:</span>
+                                    <span class="product-info-value">${data.manufacturing_date || 'N/A'}</span>
+                                </div>
+                                
+                                <div class="product-info-item">
+                                    <span class="product-info-label">Expiry Date:</span>
+                                    <span class="product-info-value">${data.expiry_date || 'N/A'}</span>
+                                </div>
+                            `}
+                            
+                            <div class="product-info-item">
+                                <span class="product-info-label">Analysis Timestamp:</span>
+                                <span class="product-info-value">${data.timestamp || 'N/A'}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="product-info-images">
+                            <div class="product-info-image-box">
+                                <h4 class="detection-title">Product Image</h4>
+                                <img class="detection-image" src="${data.product_image}?t=${timestamp}" alt="Product Image">
+                            </div>
+                            ${data.mrp_image ? `
+                                <div class="product-info-image-box">
+                                    <h4 class="detection-title">MRP Region</h4>
+                                    <img class="detection-image" src="${data.mrp_image}?t=${timestamp}" alt="MRP Region">
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching product info:', error);
+                document.getElementById('product-info-content').innerHTML = `
+                    <div class="info-message">
+                        Error fetching product information.
+                        <div class="product-info-error">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Helper function to show status messages
+        function showStatus(elementId, message, status) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = 'status-message';
+            
+            if (status === 'success') {
+                element.classList.add('success');
+            } else if (status === 'error') {
+                element.classList.add('error');
+            } else if (status === 'warning') {
+                element.classList.add('warning');
+            } else if (status === 'info') {
+                element.classList.add('info');
+            }
+        }
+        
+        // Tab switching functionality
+        function openTab(tabId) {
+            // Get the parent container of the tab
+            const tabElement = document.getElementById(tabId);
+            if (!tabElement) return;
+            
+            const parentBox = tabElement.closest('.camera-box');
+            if (!parentBox) return;
+            
+            // Hide all tab contents in this camera box
+            const tabContents = parentBox.querySelectorAll('.tab-content');
+            tabContents.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Deactivate all tabs in this camera box
+            const tabs = parentBox.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show the selected tab content
+            tabElement.classList.add('active');
+            
+            // Find and activate the corresponding tab button
+            const tabButton = parentBox.querySelector(`.tab[onclick="openTab('${tabId}')"]`);
+            if (tabButton) {
+                tabButton.classList.add('active');
+            }
+        }
+        
+        // Periodically check for new captures, detection results, best detection, and product info
+        setInterval(() => {
+            fetchLastCaptured();
+            fetchLastDetection();
+            fetchBestDetection();
+            fetchProductInfo();
+        }, 5000);
+        
+        // Initialize the UI
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("Initializing UI...");
+            // Initialize processing indicators
+            updateProcessingIndicator('camera1', 'idle', 'Ready');
+            updateProcessingIndicator('camera2', 'idle', 'Ready');
+            
+            // Fetch any existing captures, detections, best detection, and product info when the page loads
+            fetchLastCaptured();
+            fetchLastDetection();
+            fetchBestDetection();
+            fetchProductInfo();
+        });
+    </script>
+</body>
+</html>
