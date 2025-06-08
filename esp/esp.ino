@@ -22,7 +22,7 @@ const int IN4 = 4;  // Second motor direction control 2
 const int IR_SENSOR = 27; // IR sensor pin
 
 // Motor speed (0-255)
-const int MOTOR_SPEED = 185;
+const int MOTOR_SPEED = 135;
 const int MOTOR2_SPEED = 155; // Speed for the second motor (can be adjusted if needed)
 
 // Time constants
@@ -79,14 +79,14 @@ void checkAndUpdateMotors() {
   // IR LOW means no object - motors should be stopped
   // Only stop motors if they're currently running
   else if (irState == LOW && motorsRunning) {
-    delay(500);
+    delay(600);
     stopMotors();
-    delay(500);
+    delay(3000);
     callCaptureAPI();
     motorsRunning = false;
     startTime = millis();
     Serial.println("No object detected. Motors stopped.");
-    delay(4000);
+    delay(1500);
   }
   delay(10);
   

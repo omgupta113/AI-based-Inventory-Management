@@ -1,0 +1,13 @@
+{
+  "product_type": "packed",
+  "unpacked_type": "N/A",
+  "product_name": "Wafer Rolls",
+  "freshness": "N/A",
+  "shelf_life_days": "N/A",
+  "mrp": "180.00",
+  "manufacturing_date": "30.01.25",
+  "expiry_date": "29.10.25",
+  "timestamp": "2025-06-04 11:25:12",
+  "product_image": "static/captures/camera_camera2_20250604_112501.jpg",
+  "mrp_image": "static/detections/roi_camera2_camera_camera2_20250604_112441.jpg"
+}

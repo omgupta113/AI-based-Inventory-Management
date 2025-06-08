@@ -413,11 +413,11 @@
             <h2>Camera Setup</h2>
             <div class="form-group">
                 <label for="camera1_url">Camera 1 RTSP URL:</label>
-                <input type="text" id="camera1_url" placeholder="rtsp://username:password@ip:port/stream" value="rtsp://192.168.29.69:5540/ch0">
+                <input type="text" id="camera1_url" placeholder="rtsp://username:password@ip:port/stream" value="rtsp://192.168.152.210:5540/ch0">
             </div>
             <div class="form-group">
                 <label for="camera2_url">Camera 2 RTSP URL:</label>
-                <input type="text" id="camera2_url" placeholder="rtsp://username:password@ip:port/stream" value="rtsp://192.168.29.121:5540/ch0">
+                <input type="text" id="camera2_url" placeholder="rtsp://username:password@ip:port/stream" value="rtsp://192.168.152.226:5540/ch0">
             </div>
             <button id="setup_cameras">Connect to Cameras</button>
             <div id="setup_status" class="status-message"></div>
@@ -607,6 +607,68 @@
         document.getElementById('capture_camera1').addEventListener('click', () => capturePhoto('camera1'));
         document.getElementById('capture_camera2').addEventListener('click', () => capturePhoto('camera2'));
         
+        async function checkCameraHealth() {
+        try {
+            const response = await fetch('/camera_health');
+            const data = await response.json();
+            
+            // Update UI based on camera health
+            for (const [cameraId, health] of Object.entries(data.cameras)) {
+                const statusElement = document.getElementById(`${cameraId}_status`);
+                const indicatorElement = document.getElementById(`${cameraId}_indicator`);
+                const statusTextElement = document.getElementById(`${cameraId}_status_text`);
+                
+                if (statusElement && indicatorElement && statusTextElement) {
+                    if (health.status === 'healthy') {
+                        // Camera is healthy
+                        showStatus(`${cameraId}_status`, 'Camera connected and streaming', 'success');
+                        updateProcessingIndicator(cameraId, 'idle', 'Ready');
+                    } else {
+                        // Camera is unhealthy
+                        showStatus(`${cameraId}_status`, `Camera issue: ${health.reason}`, 'error');
+                        updateProcessingIndicator(cameraId, 'error', 'Camera issue');
+                        
+                        // Add restart button if it doesn't exist
+                        if (!document.getElementById(`restart_${cameraId}`)) {
+                            const buttonContainer = statusElement.parentElement;
+                            const restartButton = document.createElement('button');
+                            restartButton.id = `restart_${cameraId}`;
+                            restartButton.textContent = 'Restart Camera';
+                            restartButton.style.marginLeft = '10px';
+                            restartButton.style.backgroundColor = '#dc3545';
+                            
+                            restartButton.addEventListener('click', () => restartCamera(cameraId));
+                            
+                            buttonContainer.appendChild(restartButton);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking camera health:', error);
+        }
+    }
+
+    // Function to restart a camera
+    async function restartCamera(cameraId) {
+        try {
+            showStatus(`${cameraId}_status`, 'Restarting camera...', 'info');
+            
+            const response = await fetch(`/restart_camera/${cameraId}`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
+            showStatus(`${cameraId}_status`, data.message, data.status);
+            
+            // Check health after a short delay
+            setTimeout(checkCameraHealth, 3000);
+        } catch (error) {
+            showStatus(`${cameraId}_status`, `Error restarting camera: ${error.message}`, 'error');
+        }
+    }
+
+
         // Function to capture photo
         async function capturePhoto(cameraId) {
             showStatus(`${cameraId}_status`, 'Capturing photo...', '');
@@ -738,6 +800,13 @@
                     console.error('Error polling processing status:', error);
                 }
             }, 2000);
+            setInterval(async () => {
+                try {
+                    checkCameraHealth();
+                } catch (error) {
+                    console.error('Error checking camera health:', error);
+                }
+            }, 5000);
         }
         
         // Function to fetch last captured images
@@ -1044,6 +1113,7 @@
             fetchLastDetection();
             fetchBestDetection();
             fetchProductInfo();
+            checkCameraHealth();
         });
     </script>
 </body>

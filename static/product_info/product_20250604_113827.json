@@ -1,0 +1,13 @@
+{
+  "product_type": "unpacked",
+  "unpacked_type": "fruit",
+  "product_name": "Tomato",
+  "freshness": "fresh",
+  "shelf_life_days": 5,
+  "mrp": "N/A",
+  "manufacturing_date": "N/A",
+  "expiry_date": "N/A",
+  "timestamp": "2025-06-04 11:38:27",
+  "product_image": "static/captures/camera_camera2_20250604_113820.jpg",
+  "mrp_image": "static/detections/roi_camera2_camera_camera2_20250604_113820.jpg"
+}

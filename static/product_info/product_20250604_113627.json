@@ -1,0 +1,13 @@
+{
+  "product_type": "unpacked",
+  "unpacked_type": "fruit",
+  "product_name": "Mango",
+  "freshness": "fresh",
+  "shelf_life_days": 5,
+  "mrp": "N/A",
+  "manufacturing_date": "N/A",
+  "expiry_date": "N/A",
+  "timestamp": "2025-06-04 11:36:27",
+  "product_image": "static/captures/camera_camera1_20250604_113619.jpg",
+  "mrp_image": null
+}

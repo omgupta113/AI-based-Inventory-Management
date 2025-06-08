@@ -152,20 +152,16 @@ def load_yolo_model(model_path, use_cpu=False):
 
 # Camera reader thread function
 def camera_reader(camera_id, url, buffer_size=1):
-    """Continuously read frames from the camera in a separate thread."""
+    """Continuously read frames from the camera in a separate thread with auto-reconnection."""
     global latest_frames, frame_timestamps, frame_locks, camera_threads_running, active_stream_clients
     
+    # Initialize connection status
+    connection_status = "disconnected"
+    last_reconnect_attempt = 0
+    reconnect_cooldown = 5  # seconds between reconnection attempts
+    
     # Create a dedicated VideoCapture object for this thread
-    cap = cv2.VideoCapture(url)
-    
-    # Configure capture parameters for better performance
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size)  # Set minimal buffer size
-    
-    # RTSP specific configuration (if applicable)
-    if url.lower().startswith("rtsp"):
-        # Use TCP for RTSP (more reliable than UDP)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
-        # You can adjust other RTSP specific parameters here if needed
+    cap = None
     
     # Initialize latest frame storage
     with frame_locks[camera_id]:
@@ -178,8 +174,35 @@ def camera_reader(camera_id, url, buffer_size=1):
     
     while camera_threads_running:
         try:
-            # Check if we have any active clients - only read frames if needed
             current_time = time.time()
+            
+            # Check if camera is connected, if not, try to connect
+            if cap is None or not cap.isOpened():
+                if current_time - last_reconnect_attempt > reconnect_cooldown:
+                    debug_log(f"Trying to connect camera {camera_id} to {url}")
+                    if cap is not None:
+                        cap.release()  # Ensure previous connection is closed
+                    
+                    cap = cv2.VideoCapture(url)
+                    
+                    # Configure capture parameters
+                    if cap.isOpened():
+                        cap.set(cv2.CAP_PROP_BUFFERSIZE, buffer_size)
+                        if url.lower().startswith("rtsp"):
+                            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'H264'))
+                        
+                        connection_status = "connected"
+                        debug_log(f"Successfully connected camera {camera_id}")
+                    else:
+                        connection_status = "disconnected"
+                        debug_log(f"Failed to connect camera {camera_id}")
+                    
+                    last_reconnect_attempt = current_time
+                    
+                # If camera is still not connected, sleep and continue
+                if connection_status == "disconnected":
+                    time.sleep(1)
+                    continue
             
             # Periodically check if there are any active clients (every 5 seconds)
             if current_time - last_client_check >= 5:
@@ -187,8 +210,17 @@ def camera_reader(camera_id, url, buffer_size=1):
                     has_clients = camera_id in active_stream_clients and active_stream_clients[camera_id] > 0
                 last_client_check = current_time
                 
-                # If no clients are connected, sleep to reduce resource usage
+                # If no clients are connected, sleep to reduce resource usage but still keep checking connection
                 if not has_clients:
+                    # Still read a frame occasionally to check if connection is alive
+                    if current_time % 3 < 0.1:  # Check roughly every 3 seconds
+                        ret, _ = cap.read()
+                        if not ret:
+                            debug_log(f"Camera {camera_id} disconnected (detected during idle)")
+                            connection_status = "disconnected"
+                            cap.release()
+                            cap = None
+                    
                     time.sleep(0.5)
                     continue
             
@@ -196,47 +228,56 @@ def camera_reader(camera_id, url, buffer_size=1):
             success, frame = cap.read()
             
             if success:
-                # Only update the frame if it's needed (has active clients or recent capture)
-                with client_lock:
-                    has_clients = camera_id in active_stream_clients and active_stream_clients[camera_id] > 0
+                # Reset connection status on successful read
+                if connection_status != "connected":
+                    debug_log(f"Camera {camera_id} connection restored")
+                    connection_status = "connected"
                 
                 # Update the latest frame with a lock
                 with frame_locks[camera_id]:
+                    with client_lock:
+                        has_clients = camera_id in active_stream_clients and active_stream_clients[camera_id] > 0
+                    
                     # If the frame is different enough from the previous one or we have active clients
                     if has_clients or latest_frames[camera_id] is None:
-                        latest_frames[camera_id] = frame.copy()  # Store a copy to avoid race conditions
-                        frame_timestamps[camera_id] = time.time()  # Update timestamp
+                        latest_frames[camera_id] = frame.copy()
+                        frame_timestamps[camera_id] = time.time()
                 
                 frame_count += 1
                 
                 # Log FPS every 5 seconds
-                current_time = time.time()
                 if current_time - last_log_time >= 5:
                     fps = frame_count / (current_time - last_log_time)
-                    print(f"Camera {camera_id} FPS: {fps:.2f}, Active clients: {active_stream_clients.get(camera_id, 0)}")
+                    debug_log(f"Camera {camera_id} FPS: {fps:.2f}, Active clients: {active_stream_clients.get(camera_id, 0)}")
                     frame_count = 0
                     last_log_time = current_time
                 
                 # Sleep a tiny amount to reduce CPU usage
-                time.sleep(0.01)  # Slightly increased to reduce CPU usage
+                time.sleep(0.01)
             else:
-                # If read fails, log and retry after a short delay
-                print(f"Camera {camera_id} read failed, reconnecting...")
-                # Close and reopen the connection
+                # If read fails, log and mark as disconnected
+                debug_log(f"Camera {camera_id} read failed, marking disconnected")
+                connection_status = "disconnected"
                 cap.release()
-                time.sleep(1)  # Wait before reconnecting
-                cap = cv2.VideoCapture(url)  # Reconnect
-                
-                # Reset counters
-                frame_count = 0
-                last_log_time = time.time()
+                cap = None
+                last_reconnect_attempt = current_time  # Reset reconnect timer
         except Exception as e:
-            print(f"Error in camera_reader for {camera_id}: {str(e)}")
+            debug_log(f"Error in camera_reader for {camera_id}: {str(e)}")
+            # On exception, mark as disconnected
+            connection_status = "disconnected"
+            if cap is not None:
+                try:
+                    cap.release()
+                except:
+                    pass
+                cap = None
+            
             time.sleep(0.5)  # Wait before retrying
     
     # Clean up
-    cap.release()
-    print(f"Camera reader thread for {camera_id} stopped")
+    if cap is not None:
+        cap.release()
+    debug_log(f"Camera reader thread for {camera_id} stopped")
 
 # Cleanup old files function
 def cleanup_old_files(directory, max_age_hours=24, max_files=100):
@@ -454,20 +495,39 @@ async def video_feed(camera_id: str):
 
 @app.get("/capture/{camera_id}")
 async def capture(camera_id: str):
-    """Capture a photo from the specified camera."""
-    global latest_frames, frame_locks, last_captured_images, processing_status
+    """Capture a photo from the specified camera with enhanced error handling."""
+    global latest_frames, frame_locks, last_captured_images, processing_status, yolo_model
+    
+    # Check if the YOLO model is loaded
+    if yolo_model is None:
+        return {
+            "status": "error", 
+            "message": "YOLO model not loaded. Please load the model first.",
+            "error_type": "no_model"
+        }
     
     if camera_id not in camera_streams:
         raise HTTPException(status_code=404, detail="Camera not found")
     
-    # Get the latest frame from the buffer
-    frame = None
+    # Check camera connection status
+    camera_connected = False
     with frame_locks[camera_id]:
         if latest_frames[camera_id] is not None:
-            frame = latest_frames[camera_id].copy()
+            # Check if the frame is recent (within last 5 seconds)
+            current_time = time.time()
+            frame_time = frame_timestamps.get(camera_id, 0)
+            if current_time - frame_time < 5:
+                camera_connected = True
+                frame = latest_frames[camera_id].copy()
+            else:
+                debug_log(f"Camera {camera_id} has stale frames (last frame: {current_time - frame_time:.2f}s ago)")
     
-    if frame is None:
-        return {"status": "error", "message": "No frame available for capture"}
+    if not camera_connected:
+        return {
+            "status": "error", 
+            "message": f"Camera {camera_id} is not connected or not streaming. Please check connection.",
+            "error_type": "camera_disconnected"
+        }
     
     # Generate filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -476,25 +536,14 @@ async def capture(camera_id: str):
     # Save the image to disk
     cv2.imwrite(filename, frame)
     
-    # Limit the number of stored images per camera
-    # First, clear previous capture path to save memory
-    if camera_id in last_captured_images:
-        old_filename = last_captured_images[camera_id]
-        # Don't delete the file as it might be referenced elsewhere
-    
     # Store the image path
     last_captured_images[camera_id] = filename
     
     # Set processing status to in-progress
     processing_status[camera_id] = "processing"
     
-    # Process the image with YOLO model if available
-    if yolo_model:
-        # Add task to queue instead of starting a new thread directly
-        add_to_gpu_queue(filename, camera_id)
-    else:
-        print("YOLO model not available. Please load the model first.")
-        processing_status[camera_id] = "no_model"
+    # Add task to queue
+    add_to_gpu_queue(filename, camera_id)
     
     return {
         "status": "success", 
@@ -762,19 +811,72 @@ async def capture_all():
     global best_detection_result, GEMINI_API_KEY
     
     debug_log("Starting capture_all API call")
-    results = {}
+    results = {
+        "status": "success",
+        "cameras": {},
+        "errors": []
+    }
     product_analyzed = False  # Add a flag to track if product analysis has been done
+    if yolo_model is None:
+        results["status"] = "error"
+        results["errors"].append({
+            "type": "no_model",
+            "message": "YOLO model not loaded. Please load the model first."
+        })
+        return results
+    any_camera_connected = False
+    for camera_id in camera_streams.keys():
+        with frame_locks[camera_id]:
+            if latest_frames[camera_id] is not None:
+                # Check if frame is recent
+                current_time = time.time()
+                frame_time = frame_timestamps.get(camera_id, 0)
+                if current_time - frame_time < 5:
+                    any_camera_connected = True
+                    break
     
+    if not any_camera_connected:
+        results["status"] = "error"
+        results["errors"].append({
+            "type": "no_cameras",
+            "message": "No cameras are connected or streaming. Please check connections."
+        })
+        return results
     # Process cameras one at a time to avoid CUDA conflicts
     for camera_id in camera_streams.keys():
         debug_log(f"Capturing from camera {camera_id}")
-        # Call the individual capture endpoint for each camera
-        result = await capture(camera_id)
-        results[camera_id] = result
-        
-        # Small delay between captures to avoid CUDA conflicts
-        time.sleep(0.5)
-    
+        try:
+            # Call the individual capture endpoint for each camera
+            capture_result = await capture(camera_id)
+            results["cameras"][camera_id] = capture_result
+            
+            # If any camera had an error, mark it but continue
+            if capture_result.get("status") == "error":
+                results["errors"].append({
+                    "camera": camera_id,
+                    "type": capture_result.get("error_type", "unknown"),
+                    "message": capture_result.get("message", "Unknown error occurred")
+                })
+                
+        except Exception as e:
+            debug_log(f"Error capturing from camera {camera_id}: {str(e)}")
+            results["cameras"][camera_id] = {
+                "status": "error",
+                "message": f"Exception: {str(e)}"
+            }
+            results["errors"].append({
+                "camera": camera_id,
+                "type": "exception",
+                "message": str(e)
+            })
+        time.sleep(0.2)
+    if all(results["cameras"][camera_id].get("status") == "error" for camera_id in results["cameras"]):
+        results["status"] = "error"
+        results["errors"].append({
+            "type": "all_cameras_failed",
+            "message": "All camera captures failed. Check camera connections."
+        })
+        return results
     # Wait for YOLO processing to complete before attempting Gemini analysis
     if GEMINI_API_KEY and not product_analyzed:
         debug_log("Waiting for YOLO processing to complete before Gemini analysis")
@@ -878,6 +980,54 @@ async def capture_all():
     gc.collect()
     
     return results
+@app.get("/camera_health")
+async def check_camera_health():
+    """Check if cameras are connected and streaming properly."""
+    health_status = {}
+    
+    for camera_id in camera_streams.keys():
+        with frame_locks[camera_id]:
+            has_frames = latest_frames[camera_id] is not None
+            
+            # Check if frames are recent
+            current_time = time.time()
+            frame_time = frame_timestamps.get(camera_id, 0)
+            frame_age = current_time - frame_time if frame_time > 0 else float('inf')
+            
+            health_status[camera_id] = {
+                "connected": has_frames,
+                "last_frame_time": datetime.fromtimestamp(frame_time).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3] if frame_time > 0 else "Never",
+                "frame_age_seconds": round(frame_age, 2),
+                "status": "healthy" if has_frames and frame_age < 5 else "unhealthy",
+                "reason": "" if has_frames and frame_age < 5 else 
+                           "No frames received" if not has_frames else 
+                           f"Stale frames (last frame {round(frame_age, 2)}s ago)"
+            }
+    
+    # Overall status
+    all_healthy = all(status["status"] == "healthy" for status in health_status.values())
+    
+    return {
+        "overall_status": "healthy" if all_healthy else "unhealthy",
+        "cameras": health_status,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+@app.post("/restart_camera/{camera_id}")
+async def restart_camera(camera_id: str):
+    """Force a restart of the camera connection."""
+    if camera_id not in camera_streams:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    
+    # Reset the frame buffer to force a reconnection attempt
+    with frame_locks[camera_id]:
+        latest_frames[camera_id] = None
+        frame_timestamps[camera_id] = 0
+    
+    return {
+        "status": "success",
+        "message": f"Camera {camera_id} restart initiated. The system will attempt to reconnect."
+    }
 
 @app.get("/last_captured")
 async def get_last_captured():
@@ -1080,6 +1230,7 @@ if __name__ == "__main__":
     # Set up a memory monitoring function that runs periodically
     def memory_monitor():
         while True:
+              
             try:
                 import psutil
                 memory = psutil.virtual_memory()
